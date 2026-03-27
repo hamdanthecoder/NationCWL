@@ -271,25 +271,4 @@ def delete_admin(admin_id):
 
 # ── Init ──────────────────────────────────────────────────────────────────
 
-def init_db():  # noqa: E302
-    with app.app_context():
-        db.create_all()
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        if Admin.query.count() == 0:
-            default = Admin(
-                name='Super Admin',
-                email='admin@nationcwl.com',
-                password=generate_password_hash('admin123'),
-                role='superadmin'
-            )
-            db.session.add(default)
-            db.session.commit()
-            print("✅ Default admin created: admin@nationcwl.com / admin123")
-
-if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
-else:
-    # Called by gunicorn
-    init_db()
+d
