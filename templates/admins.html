@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Admin Accounts{% endblock %}
+
+{% block body %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">Nation<span>CWL</span></div>
+      <div class="tagline">Signup Portal</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="{{ url_for('dashboard') }}" class="nav-link">
+        <i class="fas fa-th-large"></i> Dashboard
+      </a>
+      <a href="{{ url_for('admins') }}" class="nav-link active">
+        <i class="fas fa-users-cog"></i> Admin Accounts
+      </a>
+      <div class="nav-section-label">Actions</div>
+      <a href="{{ url_for('dashboard') }}" class="nav-link">
+        <i class="fas fa-cloud-upload-alt"></i> Upload Worksheet
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-chip">
+        <div class="admin-avatar">{{ session.admin_name[0] | upper }}</div>
+        <div class="admin-info">
+          <div class="name">{{ session.admin_name }}</div>
+          <div class="role">{% if session.is_superadmin %}Super Admin{% else %}Administrator{% endif %}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Sign out
+      </a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title">Admin Accounts</div>
+      <div class="topbar-right" style="display:flex;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="openModal('changeOwnPasswordModal')">
+          <i class="fas fa-key"></i> Change My Password
+        </button>
+        {% if session.is_superadmin %}
+          <button class="btn btn-primary btn-sm" onclick="openModal('addAdminModal')">
+            <i class="fas fa-user-plus"></i> Add Admin
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for cat, msg in messages %}
+              <div class="alert alert-{{ cat }}">
+                <i class="fas fa-{% if cat == 'success' %}check-circle{% elif cat == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                {{ msg }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% if not session.is_superadmin %}
+      <div class="alert alert-info" style="margin-bottom:24px;">
+        <i class="fas fa-info-circle"></i>
+        Only the <strong>Super Admin</strong> can add or remove admin accounts. You can change your own password using the button above.
+      </div>
+      {% endif %}
+
+      <!-- Stats bar -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;background:rgba(200,75,49,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent);">
+            <i class="fas fa-users"></i>
+          </div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1;">{{ admins | length }}</div>
+            <div style="font-size:12px;color:var(--muted);">Total Admins</div>
+          </div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;background:rgba(212,168,67,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--gold);">
+            <i class="fas fa-crown"></i>
+          </div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1;">1</div>
+            <div style="font-size:12px;color:var(--muted);">Super Admin</div>
+          </div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;background:rgba(40,116,166,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--info);">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1;">{{ admins | selectattr('role', 'ne', 'superadmin') | list | length }}</div>
+            <div style="font-size:12px;color:var(--muted);">Regular Admins</div>
+          </div>
+        </div>
+        {% if session.is_superadmin %}
+        <div style="margin-left:auto;">
+          <button class="btn btn-primary" onclick="openModal('addAdminModal')">
+            <i class="fas fa-user-plus"></i> Add New Admin
+          </button>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Admin cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin-bottom:32px;">
+        {% for admin in admins %}
+        <div class="card" style="{% if admin.role == 'superadmin' %}border-color:rgba(212,168,67,0.4);{% endif %}">
+          <div style="height:3px;background:{% if admin.role == 'superadmin' %}linear-gradient(90deg,var(--gold),var(--accent-2)){% else %}linear-gradient(90deg,var(--accent),var(--accent-2)){% endif %};"></div>
+          <div class="card-body" style="padding:24px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:52px;height:52px;border-radius:14px;background:{% if admin.role == 'superadmin' %}linear-gradient(135deg,var(--gold),var(--accent-2)){% else %}linear-gradient(135deg,var(--accent),var(--accent-2)){% endif %};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:white;flex-shrink:0;">
+                  {{ admin.name[0] | upper }}
+                </div>
+                <div>
+                  <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;">{{ admin.name }}</div>
+                  <div style="font-size:13px;color:var(--muted);">{{ admin.email }}</div>
+                </div>
+              </div>
+              {% if admin.role == 'superadmin' %}
+                <span class="badge badge-super"><i class="fas fa-crown"></i> Super</span>
+              {% else %}
+                <span class="badge badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>
+              {% endif %}
+            </div>
+
+            <div style="border-top:1px solid var(--border);padding-top:14px;">
+              <div style="display:flex;gap:20px;margin-bottom:14px;">
+                <div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);font-weight:600;">Worksheets</div>
+                  <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-top:2px;">{{ admin.worksheets | length }}</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);font-weight:600;">Joined</div>
+                  <div style="font-size:14px;margin-top:4px;">{{ admin.created_at.strftime('%d %b %Y') }}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                {% if admin.id == session.admin_id %}
+                  <button class="btn btn-ghost btn-sm" onclick="openModal('changeOwnPasswordModal')">
+                    <i class="fas fa-key"></i> Change Password
+                  </button>
+                  <span class="badge" style="background:rgba(45,122,79,0.1);color:var(--success);align-self:center;">
+                    <i class="fas fa-check-circle"></i> You
+                  </span>
+                {% elif admin.role == 'superadmin' %}
+                  <span class="badge badge-super"><i class="fas fa-lock"></i> Protected</span>
+                {% else %}
+                  {% if session.is_superadmin %}
+                    <button class="btn btn-ghost btn-sm" onclick="openResetModal({{ admin.id }}, '{{ admin.name }}')">
+                      <i class="fas fa-key"></i> Reset Password
+                    </button>
+                    <form method="POST" action="{{ url_for('delete_admin', admin_id=admin.id) }}" onsubmit="return confirm('Remove {{ admin.name }}? This cannot be undone.')">
+                      <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash-alt"></i> Remove
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="badge" style="background:var(--surface);color:var(--muted);">
+                      <i class="fas fa-lock"></i> Locked
+                    </span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-info-circle" style="color:var(--info);margin-right:8px;"></i>Admin Policy</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;">
+            <strong style="color:var(--ink);">Every admin</strong> can change their own password anytime. <strong style="color:var(--ink);">Super Admin</strong> can reset any admin's password and add or remove accounts with no limit. The Super Admin account is protected and cannot be deleted.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Change OWN Password Modal ── -->
+<div class="modal-overlay" id="changeOwnPasswordModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-key" style="color:var(--accent);margin-right:8px;"></i>Change My Password</span>
+      <button class="modal-close" onclick="closeModal('changeOwnPasswordModal')">×</button>
+    </div>
+    <form method="POST" action="{{ url_for('change_own_password') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <div style="position:relative;">
+            <input type="password" name="current_password" id="curPwField" class="form-control" style="padding-right:44px;" placeholder="Enter current password" required/>
+            <button type="button" onclick="togglePassword('curPwField','curPwIcon')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">
+              <i class="fas fa-eye" id="curPwIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div style="position:relative;">
+            <input type="password" name="new_password" id="newPw1" class="form-control" style="padding-right:44px;" placeholder="At least 6 characters" minlength="6" required/>
+            <button type="button" onclick="togglePassword('newPw1','newPw1Icon')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">
+              <i class="fas fa-eye" id="newPw1Icon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Confirm New Password</label>
+          <div style="position:relative;">
+            <input type="password" name="confirm_password" id="confirmPw1" class="form-control" style="padding-right:44px;" placeholder="Repeat new password" minlength="6" required/>
+            <button type="button" onclick="togglePassword('confirmPw1','confirmPw1Icon')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">
+              <i class="fas fa-eye" id="confirmPw1Icon"></i>
+            </button>
+          </div>
+          <div id="matchMsg1" style="font-size:12px;margin-top:6px;display:none;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('changeOwnPasswordModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if session.is_superadmin %}
+<!-- ── Reset OTHER Admin Password Modal ── -->
+<div class="modal-overlay" id="resetAdminPasswordModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-key" style="color:var(--gold);margin-right:8px;"></i>Reset Password — <span id="resetAdminName"></span></span>
+      <button class="modal-close" onclick="closeModal('resetAdminPasswordModal')">×</button>
+    </div>
+    <form method="POST" id="resetPasswordForm">
+      <div class="modal-body">
+        <div class="alert alert-info" style="margin-bottom:20px;">
+          <i class="fas fa-info-circle"></i>
+          Resetting password for <strong id="resetAdminNameInfo"></strong>. They must use the new password to log in.
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div style="position:relative;">
+            <input type="password" name="new_password" id="newPw2" class="form-control" style="padding-right:44px;" placeholder="At least 6 characters" minlength="6" required/>
+            <button type="button" onclick="togglePassword('newPw2','newPw2Icon')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">
+              <i class="fas fa-eye" id="newPw2Icon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Confirm New Password</label>
+          <div style="position:relative;">
+            <input type="password" name="confirm_password" id="confirmPw2" class="form-control" style="padding-right:44px;" placeholder="Repeat new password" minlength="6" required/>
+            <button type="button" onclick="togglePassword('confirmPw2','confirmPw2Icon')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">
+              <i class="fas fa-eye" id="confirmPw2Icon"></i>
+            </button>
+          </div>
+          <div id="matchMsg2" style="font-size:12px;margin-top:6px;display:none;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('resetAdminPasswordModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Reset Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Add Admin Modal ── -->
+<div class="modal-overlay" id="addAdminModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Admin Account</span>
+      <button class="modal-close" onclick="closeModal('addAdminModal')">×</button>
+    </div>
+    <form method="POST" action="{{ url_for('add_admin') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="name" class="form-control" placeholder="John Doe" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" class="form-control" placeholder="john@nationcwl.com" required/>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Password</label>
+          <div style="position:relative;">
+            <input type="password" name="password" id="addAdminPw" class="form-control" style="padding-right:44px;" placeholder="At least 6 characters" minlength="6" required/>
+            <button type="button" onclick="togglePassword('addAdminPw','addAdminPwIcon')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px;">
+              <i class="fas fa-eye" id="addAdminPwIcon"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('addAdminModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Admin</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openResetModal(adminId, adminName) {
+    document.getElementById('resetAdminName').textContent = adminName;
+    document.getElementById('resetAdminNameInfo').textContent = adminName;
+    document.getElementById('resetPasswordForm').action = '/admins/reset-password/' + adminId;
+    document.getElementById('newPw2').value = '';
+    document.getElementById('confirmPw2').value = '';
+    document.getElementById('matchMsg2').style.display = 'none';
+    openModal('resetAdminPasswordModal');
+  }
+
+  // Live match checker — own password modal
+  function checkMatch(pwId, cfId, msgId) {
+    var pw = document.getElementById(pwId);
+    var cf = document.getElementById(cfId);
+    var msg = document.getElementById(msgId);
+    if (!pw || !cf || !msg) return;
+    [pw, cf].forEach(function(el) {
+      el.addEventListener('input', function() {
+        if (!cf.value) { msg.style.display = 'none'; return; }
+        msg.style.display = 'block';
+        if (pw.value === cf.value) {
+          msg.style.color = 'var(--success)';
+          msg.innerHTML = '<i class="fas fa-check-circle"></i> Passwords match';
+        } else {
+          msg.style.color = 'var(--error)';
+          msg.innerHTML = '<i class="fas fa-times-circle"></i> Passwords do not match';
+        }
+      });
+    });
+  }
+
+  checkMatch('newPw1', 'confirmPw1', 'matchMsg1');
+  checkMatch('newPw2', 'confirmPw2', 'matchMsg2');
+</script>
+{% endblock %}

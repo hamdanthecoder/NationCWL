@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NationCWL — Admin Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --ink: #0a0a0f;
+      --accent: #c84b31;
+      --accent-2: #e8703a;
+      --gold: #d4a843;
+      --surface: #f4f2ee;
+      --white: #fdfcfa;
+      --border: #d8d3cb;
+      --muted: #7a7570;
+      --error: #c0392b;
+      --success: #2d7a4f;
+      --info: #2874a6;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      background: var(--ink);
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+    }
+
+    .login-left {
+      flex: 1;
+      background: var(--ink);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 52px;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-left::before {
+      content: '';
+      position: absolute;
+      top: -120px; right: -120px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(200,75,49,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .login-left::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -60px;
+      width: 360px; height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,168,67,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 26px; color: white; letter-spacing: -0.5px; }
+    .brand span { color: var(--accent); }
+    .brand-sub { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-top: 6px; font-weight: 300; }
+    .hero-text { position: relative; z-index: 1; }
+    .hero-text h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 48px; line-height: 1.08; color: white; margin-bottom: 20px; }
+    .hero-text h1 em { font-style: normal; color: var(--accent-2); }
+    .hero-text p { font-size: 16px; color: rgba(255,255,255,0.45); font-weight: 300; line-height: 1.7; max-width: 340px; }
+    .feature-list { display: flex; flex-direction: column; gap: 14px; margin-top: 40px; }
+    .feature-item { display: flex; align-items: center; gap: 14px; }
+    .feature-dot { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--accent-2); }
+    .feature-item span { font-size: 14px; color: rgba(255,255,255,0.5); }
+    .footer-note { font-size: 12px; color: rgba(255,255,255,0.2); position: relative; z-index: 1; }
+
+    .login-right {
+      width: 460px;
+      flex-shrink: 0;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 52px;
+    }
+    .login-header { margin-bottom: 36px; }
+    .login-header h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 28px; color: var(--ink); margin-bottom: 8px; }
+    .login-header p { font-size: 14px; color: var(--muted); }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
+    .input-wrap { position: relative; }
+    .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; pointer-events: none; }
+    .form-control {
+      width: 100%; padding: 12px 44px 12px 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px; font-family: inherit;
+      background: var(--white); color: var(--ink);
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,75,49,0.12); }
+
+    .toggle-pass {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 15px;
+      padding: 4px 6px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .toggle-pass:hover { color: var(--ink); }
+
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: var(--accent); color: white; border: none;
+      border-radius: 10px; font-size: 15px; font-weight: 600;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-login:hover { background: #b03e27; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(200,75,49,0.3); }
+    .btn-login:active { transform: none; }
+
+    .alert { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; }
+    .alert-error { background: rgba(192,57,43,0.1); color: var(--error); border: 1px solid rgba(192,57,43,0.2); }
+    .alert-success { background: rgba(45,122,79,0.1); color: var(--success); border: 1px solid rgba(45,122,79,0.2); }
+    .alert-info { background: rgba(40,116,166,0.1); color: #1a5c8a; border: 1px solid rgba(40,116,166,0.2); }
+
+    .hint-box {
+      margin-top: 24px; padding: 14px 16px;
+      background: rgba(200,75,49,0.06);
+      border: 1px solid rgba(200,75,49,0.15);
+      border-radius: 10px;
+      font-size: 13px; color: var(--muted); line-height: 1.8;
+    }
+    .hint-box strong { color: var(--ink); }
+
+    @media (max-width: 900px) {
+      .login-left { display: none; }
+      .login-right { width: 100%; padding: 48px 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-left">
+    <div>
+      <div class="brand">Nation<span>CWL</span></div>
+      <div class="brand-sub">Signup Portal</div>
+    </div>
+    <div class="hero-text">
+      <h1>Manage your<br/><em>worksheets</em><br/>with ease.</h1>
+      <p>A secure admin portal for uploading, tracking and managing monthly Google Worksheets across your organization.</p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-dot"><i class="fas fa-upload"></i></div>
+          <span>Monthly worksheet uploads &amp; tracking</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot"><i class="fas fa-users-cog"></i></div>
+          <span>Unlimited admin accounts</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot"><i class="fas fa-shield-alt"></i></div>
+          <span>Secure file management</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note">© 2024 NationCWL. All rights reserved.</div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-header">
+      <h2>Welcome back</h2>
+      <p>Sign in to your admin account to continue</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }}">
+          <i class="fas fa-{% if cat == 'success' %}check-circle{% elif cat == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email" name="email" class="form-control" required autocomplete="email"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" name="password" id="loginPwField" class="form-control" placeholder="••••••••" required autocomplete="current-password"/>
+          <button type="button" class="toggle-pass" onclick="togglePassword('loginPwField','loginEyeIcon')">
+            <i class="fas fa-eye" id="loginEyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn-login">
+        <i class="fas fa-sign-in-alt"></i> Sign In
+      </button>
+    </form>
+
+   
+  </div>
+
+  <script>
+    function togglePassword(fieldId, iconId) {
+      var field = document.getElementById(fieldId);
+      var icon = document.getElementById(iconId);
+      if (!field || !icon) return;
+      if (field.type === 'password') {
+        field.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        field.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+  </script>
+</body>
+</html>
