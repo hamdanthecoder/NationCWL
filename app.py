@@ -10,21 +10,15 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nationcwl-super-secret-key-2024')
 
 # ── Database: Railway MySQL or local SQLite fallback ──────────────────────
-_mysql_host = os.environ.get('MYSQLHOST')
-_mysql_user = os.environ.get('MYSQLUSER')
-_mysql_pw   = os.environ.get('MYSQLPASSWORD', '')
-_mysql_db   = os.environ.get('MYSQLDATABASE')
-_mysql_port = os.environ.get('MYSQLPORT', '3306')
+db_url = os.environ.get("MYSQL_URL")
 
-if _mysql_host and _mysql_user and _mysql_db:
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f'mysql+pymysql://{_mysql_user}:{_mysql_pw}@{_mysql_host}:{_mysql_port}/{_mysql_db}'
-    )
+if db_url:
+    db_url = db_url.replace("mysql://", "mysql+pymysql://")
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     print("✅ Using Railway MySQL database")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///nationcwl.db'
-    print("⚠️  MySQL not configured — using local SQLite")
-
+    print("⚠️ Using SQLite (no MYSQL_URL found)")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
