@@ -271,3 +271,20 @@ def delete_admin(admin_id):
 
 # ── Init ──────────────────────────────────────────────────────────────────
 
+with app.app_context():
+    db.create_all()
+
+    # Create upload folder if not exists
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    # Create default admin
+    if not Admin.query.filter_by(email="admin@gmail.com").first():
+        admin = Admin(
+            name="Admin",
+            email="admin@gmail.com",
+            password=generate_password_hash("admin123"),
+            role="superadmin"
+        )
+        db.session.add(admin)
+        db.session.commit()
+        print("✅ Default admin created")
