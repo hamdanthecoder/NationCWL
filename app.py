@@ -7,8 +7,24 @@ from functools import wraps
 import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'nationcwl-super-secret-key-2024'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///nationcwl.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nationcwl-super-secret-key-2024')
+
+# ── Database: Railway MySQL or local SQLite fallback ──────────────────────
+_mysql_host = os.environ.get('MYSQLHOST')
+_mysql_user = os.environ.get('MYSQLUSER')
+_mysql_pw   = os.environ.get('MYSQLPASSWORD', '')
+_mysql_db   = os.environ.get('MYSQLDATABASE')
+_mysql_port = os.environ.get('MYSQLPORT', '3306')
+
+if _mysql_host and _mysql_user and _mysql_db:
+    app.config['SQLALCHEMY_DATABASE_URI'] = (
+        f'mysql+pymysql://{_mysql_user}:{_mysql_pw}@{_mysql_host}:{_mysql_port}/{_mysql_db}'
+    )
+    print("✅ Using Railway MySQL database")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///nationcwl.db'
+    print("⚠️  MySQL not configured — using local SQLite")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
@@ -16,29 +32,29 @@ ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv'}
 
 db = SQLAlchemy(app)
 
-# ── Models ──────────────────────────────────────────────────────────────────
+# ── Models ────────────────────────────────────────────────────────────────
 
 class Admin(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(50), default='admin')
+    id         = db.Column(db.Integer, primary_key=True)
+    name       = db.Column(db.String(100), nullable=False)
+    email      = db.Column(db.String(150), unique=True, nullable=False)
+    password   = db.Column(db.String(200), nullable=False)
+    role       = db.Column(db.String(50), default='admin')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     worksheets = db.relationship('Worksheet', backref='uploaded_by', lazy=True)
 
 class Worksheet(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(200), nullable=False)
+    id            = db.Column(db.Integer, primary_key=True)
+    filename      = db.Column(db.String(200), nullable=False)
     original_name = db.Column(db.String(200), nullable=False)
-    month = db.Column(db.String(20), nullable=False)
-    year = db.Column(db.Integer, nullable=False)
-    description = db.Column(db.Text)
-    file_size = db.Column(db.Integer)
-    admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    month         = db.Column(db.String(20), nullable=False)
+    year          = db.Column(db.Integer, nullable=False)
+    description   = db.Column(db.Text)
+    file_size     = db.Column(db.Integer)
+    admin_id      = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -74,7 +90,7 @@ app.jinja_env.globals['format_size'] = format_size
 MONTHS = ['January','February','March','April','May','June',
           'July','August','September','October','November','December']
 
-# ── Routes ───────────────────────────────────────────────────────────────────
+# ── Routes ────────────────────────────────────────────────────────────────
 
 @app.route('/')
 def index():
@@ -87,13 +103,13 @@ def login():
     if 'admin_id' in session:
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
-        email = request.form.get('email', '').strip()
+        email    = request.form.get('email', '').strip()
         password = request.form.get('password', '')
-        admin = Admin.query.filter_by(email=email).first()
+        admin    = Admin.query.filter_by(email=email).first()
         if admin and check_password_hash(admin.password, password):
-            session['admin_id'] = admin.id
-            session['admin_name'] = admin.name
-            session['admin_email'] = admin.email
+            session['admin_id']      = admin.id
+            session['admin_name']    = admin.name
+            session['admin_email']   = admin.email
             session['is_superadmin'] = (admin.role == 'superadmin')
             flash(f'Welcome back, {admin.name}!', 'success')
             return redirect(url_for('dashboard'))
@@ -110,7 +126,7 @@ def logout():
 @login_required
 def dashboard():
     worksheets = Worksheet.query.order_by(Worksheet.created_at.desc()).all()
-    admins = Admin.query.all()
+    admins     = Admin.query.all()
     total_size = sum(w.file_size or 0 for w in worksheets)
     return render_template('dashboard.html',
                            worksheets=worksheets,
@@ -126,9 +142,9 @@ def upload():
     if 'file' not in request.files:
         flash('No file selected.', 'error')
         return redirect(url_for('dashboard'))
-    file = request.files['file']
-    month = request.form.get('month')
-    year = request.form.get('year')
+    file        = request.files['file']
+    month       = request.form.get('month')
+    year        = request.form.get('year')
     description = request.form.get('description', '')
 
     if not file or file.filename == '':
@@ -138,12 +154,10 @@ def upload():
         flash('Only Excel (.xlsx, .xls) and CSV files are allowed.', 'error')
         return redirect(url_for('dashboard'))
 
-    filename = secure_filename(file.filename)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-    saved_name = timestamp + filename
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], saved_name)
+    filename   = secure_filename(file.filename)
+    saved_name = datetime.now().strftime('%Y%m%d_%H%M%S_') + filename
+    file_path  = os.path.join(app.config['UPLOAD_FOLDER'], saved_name)
     file.save(file_path)
-    size = os.path.getsize(file_path)
 
     ws = Worksheet(
         filename=saved_name,
@@ -151,7 +165,7 @@ def upload():
         month=month,
         year=int(year),
         description=description,
-        file_size=size,
+        file_size=os.path.getsize(file_path),
         admin_id=session['admin_id']
     )
     db.session.add(ws)
@@ -191,8 +205,8 @@ def admins():
 @login_required
 @superadmin_required
 def add_admin():
-    name = request.form.get('name', '').strip()
-    email = request.form.get('email', '').strip()
+    name     = request.form.get('name', '').strip()
+    email    = request.form.get('email', '').strip()
     password = request.form.get('password', '')
     if not name or not email or not password:
         flash('All fields are required.', 'error')
@@ -200,8 +214,7 @@ def add_admin():
     if Admin.query.filter_by(email=email).first():
         flash('Email already exists.', 'error')
         return redirect(url_for('admins'))
-    admin = Admin(name=name, email=email,
-                  password=generate_password_hash(password))
+    admin = Admin(name=name, email=email, password=generate_password_hash(password))
     db.session.add(admin)
     db.session.commit()
     flash(f'Admin "{name}" added successfully!', 'success')
@@ -211,9 +224,9 @@ def add_admin():
 @login_required
 def change_own_password():
     current = request.form.get('current_password', '')
-    new_pw = request.form.get('new_password', '')
+    new_pw  = request.form.get('new_password', '')
     confirm = request.form.get('confirm_password', '')
-    admin = Admin.query.get(session['admin_id'])
+    admin   = Admin.query.get(session['admin_id'])
     if not check_password_hash(admin.password, current):
         flash('Current password is incorrect.', 'error')
         return redirect(url_for('admins'))
@@ -232,7 +245,7 @@ def change_own_password():
 @login_required
 @superadmin_required
 def reset_admin_password(admin_id):
-    new_pw = request.form.get('new_password', '')
+    new_pw  = request.form.get('new_password', '')
     confirm = request.form.get('confirm_password', '')
     if len(new_pw) < 6:
         flash('Password must be at least 6 characters.', 'error')
@@ -262,9 +275,9 @@ def delete_admin(admin_id):
     flash(f'Admin "{admin.name}" removed.', 'success')
     return redirect(url_for('admins'))
 
-# ── Init ──────────────────────────────────────────────────────────────────────
+# ── Init ──────────────────────────────────────────────────────────────────
 
-def init_db():
+def init_db():  # noqa: E302
     with app.app_context():
         db.create_all()
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -281,4 +294,8 @@ def init_db():
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+else:
+    # Called by gunicorn
+    init_db()

@@ -1,3 +1,6 @@
-flask
+-e flask
 flask-sqlalchemy
 werkzeug
+gunicorn
+pymysql
+cryptography
